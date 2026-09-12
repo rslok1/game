@@ -6,7 +6,14 @@ jobs:
   build:
     runs-on: ubuntu-22.04
 
-    steps:
+    
+steps:
+    - name: Free disk space
+      run: |
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /opt/ghc
+        sudo rm -rf "/usr/local/share/boost"
+
     - name: Checkout code
       uses: actions/checkout@v4
 
@@ -21,26 +28,29 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install System Dependencies and AIDL
+    - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev \
           libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libgdbm-dev \
-          libssl-dev libffi-dev liblzma-dev build-essential android-sdk-build-tools
-
-        
-        sudo cp $(which aidl) /usr/local/bin/aidl || true
-        sudo chmod +x /usr/local/bin/aidl
-
+          libssl-dev libffi-dev liblzma-dev build-essential
         pip install --upgrade pip setuptools wheel
-        pip install "buildozer==1.5.0" "cython<3.0" virtualenv
+        # Ставим Buildozer напрямую из master, где пути к cmdline-tools уже исправлены
+        pip install git+https://github.com/kivy/buildozer.git
+        pip install "cython<3.0" virtualenv
 
-    - name: Prepare Buildozer AIDL Folder
+    - name: Set up Android SDK components
       run: |
-        mkdir -p ~/.buildozer/android/platform/android-sdk/build-tools/33.0.0/
-        cp /usr/local/bin/aidl ~/.buildozer/android/platform/android-sdk/build-tools/33.0.0/aidl || true
+        # Принимаем лицензии и устанавливаем aidl в системный Android SDK
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
 
     - name: Build with Buildozer
+      env:
+        # Указываем Buildozer использовать готовый системный SDK гитхаба
+        ANDROIDSDK: /usr/local/lib/android/sdk
+        ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        ANDROID_HOME: /usr/local/lib/android/sdk
       run: |
         buildozer -v android debug
 
