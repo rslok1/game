@@ -6,56 +6,52 @@ jobs:
   build:
     runs-on: ubuntu-22.04
 
-    
-steps:
-    - name: Free disk space
-      run: |
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /opt/ghc
-        sudo rm -rf "/usr/local/share/boost"
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
 
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev \
-          libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libgdbm-dev \
-          libssl-dev libffi-dev liblzma-dev build-essential
-        pip install --upgrade pip setuptools wheel
-        # Ставим Buildozer напрямую из master, где пути к cmdline-tools уже исправлены
-        pip install git+https://github.com/kivy/buildozer.git
-        pip install "cython<3.0" virtualenv
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev \
+            libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libgdbm-dev \
+            libssl-dev libffi-dev liblzma-dev build-essential
+          pip install --upgrade pip setuptools wheel
+          pip install git+https://github.com/kivy/buildozer.git
+          pip install "cython<3.0" virtualenv
 
-    - name: Set up Android SDK components
-      run: |
-        # Принимаем лицензии и устанавливаем aidl в системный Android SDK
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
+      - name: Set up Android SDK components
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33"
 
-    - name: Build with Buildozer
-      env:
-        # Указываем Buildozer использовать готовый системный SDK гитхаба
-        ANDROIDSDK: /usr/local/lib/android/sdk
-        ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-        ANDROID_HOME: /usr/local/lib/android/sdk
-      run: |
-        buildozer -v android debug
+      - name: Build with Buildozer
+        env:
+          ANDROIDSDK: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+          ANDROID_HOME: /usr/local/lib/android/sdk
+        run: |
+          buildozer -v android debug
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: Capuchinator-APK
-        path: bin/*.apk
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Capuchinator-APK
+          path: bin/*.apk
